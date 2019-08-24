@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Understanding File Uploads and hapi</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link
+            rel="stylesheet"
+            href="https://unpkg.com/tachyons@4.10.0/css/tachyons.min.css"
+        />
+    </head>
+    <body class="lh-copy ma0 sans-serif w-100">
+        <main class="center mw6 pa3">
+            <form
+                action="/upload"
+                class="tc"
+                enctype="multipart/form-data"
+                method="POST"
+            >
+                <div class="mv3 tl">
+                    <label class="black-80 db pb2" for="input-profile"
+                        >Profile picture</label
+                    >
+                    <input
+                        accept="image/*"
+                        class="ba border-box b--black-50 br2 input-reset ph3 pointer pv2 w-100"
+                        id="input-profile"
+                        name="profile"
+                        type="file"
+                    />
+                </div>
+                <div class="mv3 tl">
+                    <label class="black-80 db pb2" for="input-background"
+                        >Background picture</label
+                    >
+                    <input
+                        accept="image/*"
+                        class="ba border-box b--black-50 br2 input-reset ph3 pointer pv2 w-100"
+                        id="input-background"
+                        name="background"
+                        type="file"
+                    />
+                </div>
+                <button
+                    class="bn br2 bg-blue center dib dim fw7 mt3 ph3 pointer pv2 white"
+                    type="submit"
+                >
+                    Upload
+                </button>
+            </form>
+        </main>
+    </body>
+</html>
