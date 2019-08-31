@@ -62,8 +62,8 @@ typings/
 
 src/**/*.js
 src/**/*.js.map
-styleguide/**/*.js
-styleguide/**/*.js.map
+test/**/*.js
+test/**/*.js.map
 
 # Build output
 build

@@ -29,7 +29,7 @@ type StreamPayload = Record<
     }
 >;
 
-const getServer = async () => {
+export const getServer = async () => {
     const server = new Hapi.Server({
         port: process.env.PORT || 3000,
         routes: {

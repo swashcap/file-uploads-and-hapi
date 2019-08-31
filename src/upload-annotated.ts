@@ -4,7 +4,6 @@ import Good from '@hapi/good';
 import Hapi from '@hapi/hapi';
 import Inert from '@hapi/inert';
 import Joi from '@hapi/joi';
-import Os from 'os';
 import Path from 'path';
 import Wreck from '@hapi/wreck';
 
@@ -27,7 +26,7 @@ type AnnotatedPayload = Record<
       }
 >;
 
-const getServer = async () => {
+export const getServer = async () => {
     const server = new Hapi.Server({
         port: process.env.PORT || 3000,
         routes: {
@@ -84,14 +83,11 @@ const getServer = async () => {
         handler: async (request, h) => {
             const payload = request.payload as AnnotatedPayload;
 
-            // Write uploaded files to `Os.tmpdir()`
             const responses = await Promise.all(
                 Object.values(payload)
                     .filter(({ filename }) => !!filename)
-                    .map(({ filename: basename, payload }) => {
-                        const filename = Path.join(Os.tmpdir(), basename);
-
-                        return Promise.all([
+                    .map(({ filename, payload }) =>
+                        Promise.all([
                             filename,
                             Wreck.request(
                                 'POST',
@@ -100,8 +96,8 @@ const getServer = async () => {
                                 )}`,
                                 { payload }
                             ),
-                        ]);
-                    })
+                        ])
+                    )
             );
 
             return h
