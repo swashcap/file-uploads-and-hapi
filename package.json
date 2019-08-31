@@ -36,5 +36,6 @@
     "format": "prettier --write 'public/*' '{src,test,types}/*.ts'",
     "start": "node src/index.js",
     "test": "NODE_ENV=test mocha"
-  }
+  },
+  "private": true
 }
