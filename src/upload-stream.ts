@@ -41,27 +41,29 @@ const getServer = async () => {
 
     await Promise.all([
         server.register(Inert),
-        server.register({
-            plugin: Good,
-            options: {
-                ops: {
-                    interval: 1000,
-                },
-                reporters: {
-                    myConsoleReporter: [
-                        {
-                            module: '@hapi/good-squeeze',
-                            name: 'Squeeze',
-                            args: [{ log: '*', response: '*' }],
-                        },
-                        {
-                            module: '@hapi/good-console',
-                        },
-                        'stdout',
-                    ],
-                },
-            },
-        }),
+        process.env.NODE_ENV !== 'test'
+            ? server.register({
+                  plugin: Good,
+                  options: {
+                      ops: {
+                          interval: 1000,
+                      },
+                      reporters: {
+                          myConsoleReporter: [
+                              {
+                                  module: '@hapi/good-squeeze',
+                                  name: 'Squeeze',
+                                  args: [{ log: '*', response: '*' }],
+                              },
+                              {
+                                  module: '@hapi/good-console',
+                              },
+                              'stdout',
+                          ],
+                      },
+                  },
+              })
+            : undefined,
     ]);
 
     server.route({
