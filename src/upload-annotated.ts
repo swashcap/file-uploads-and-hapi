@@ -1,5 +1,6 @@
 import 'hard-rejection/register';
 
+import Good from '@hapi/good';
 import Hapi from '@hapi/hapi';
 import Inert from '@hapi/inert';
 import Joi from '@hapi/joi';
@@ -36,7 +37,32 @@ const getServer = async () => {
         },
     });
 
-    await server.register(Inert);
+    await Promise.all([
+        server.register(Inert),
+        process.env.NODE_ENV !== 'test'
+            ? server.register({
+                  plugin: Good,
+                  options: {
+                      ops: {
+                          interval: 1000,
+                      },
+                      reporters: {
+                          myConsoleReporter: [
+                              {
+                                  module: '@hapi/good-squeeze',
+                                  name: 'Squeeze',
+                                  args: [{ log: '*', response: '*' }],
+                              },
+                              {
+                                  module: '@hapi/good-console',
+                              },
+                              'stdout',
+                          ],
+                      },
+                  },
+              })
+            : undefined,
+    ]);
 
     server.route({
         handler: {
