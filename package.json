@@ -2,7 +2,7 @@
   "name": "understanding-file-uploads-and-hapi",
   "version": "1.0.0",
   "main": "src/index.js",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "@hapi/good": "^8.2.1",
     "@hapi/good-console": "^8.1.1",
