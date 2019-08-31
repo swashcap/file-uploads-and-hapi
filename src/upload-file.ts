@@ -1,9 +1,10 @@
 import 'hard-rejection/register';
 
-import Good from '@hapi/good';
 import Fs from 'fs';
+import Good from '@hapi/good';
 import Hapi from '@hapi/hapi';
 import Inert from '@hapi/inert';
+import Joi from '@hapi/joi';
 import Path from 'path';
 import Wreck from '@hapi/wreck';
 
@@ -118,6 +119,28 @@ const getServer = async () => {
             payload: {
                 allow: 'multipart/form-data',
                 output: 'file',
+            },
+            validate: {
+                payload: Joi.object({
+                    background: Joi.object({
+                        bytes: Joi.number().required(),
+                        filename: Joi.string()
+                            .regex(/\.(gif|jpe?g|png)$/)
+                            .empty('')
+                            .required(),
+                        headers: Joi.object().required(),
+                        path: Joi.string().required(),
+                    }).required(),
+                    profile: Joi.object({
+                        bytes: Joi.number().required(),
+                        filename: Joi.string()
+                            .regex(/\.(gif|jpe?g|png)$/)
+                            .empty('')
+                            .required(),
+                        headers: Joi.object().required(),
+                        path: Joi.string().required(),
+                    }).required(),
+                }).required(),
             },
         },
         path: '/upload',

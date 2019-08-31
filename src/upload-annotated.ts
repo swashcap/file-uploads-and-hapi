@@ -116,6 +116,28 @@ const getServer = async () => {
                     output: 'annotated',
                 },
             },
+            validate: {
+                payload: Joi.object({
+                    background: Joi.object({
+                        filename: Joi.string()
+                            .regex(/\.(gif|jpe?g|png)$/)
+                            .empty()
+                            .required(),
+                        headers: Joi.object(),
+                        payload: Joi.object(),
+                    }).required(),
+                    profile: Joi.object({
+                        filename: Joi.string()
+                            .regex(/\.(gif|jpe?g|png)$/)
+                            .empty()
+                            .required(),
+                        headers: Joi.object(),
+                        payload: Joi.object(),
+                    })
+                        .unknown(true)
+                        .required(),
+                }),
+            },
         },
         path: '/upload',
     });
