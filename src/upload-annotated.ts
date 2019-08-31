@@ -1,10 +1,11 @@
 import 'hard-rejection/register';
 
-import Fs from 'fs';
 import Hapi from '@hapi/hapi';
 import Inert from '@hapi/inert';
-import Path from 'path';
+import Joi from '@hapi/joi';
 import Os from 'os';
+import Path from 'path';
+import Wreck from '@hapi/wreck';
 
 interface MultipartFormDataHeaders {
     'content-disposition': string;
@@ -66,7 +67,13 @@ const getServer = async () => {
 
                         return Promise.all([
                             filename,
-                            Fs.promises.writeFile(filename, payload),
+                            Wreck.request(
+                                'POST',
+                                `http://localhost:3001/files/${encodeURIComponent(
+                                    filename
+                                )}`,
+                                { payload }
+                            ),
                         ]);
                     })
             );
