@@ -119,7 +119,7 @@ const getServer = async () => {
                         hapi: Joi.object()
                             .keys({
                                 filename: Joi.string()
-                                    .regex(/^\.[gif|jpe?g|png]$/)
+                                    .regex(/\.(gif|jpe?g|png)$/)
                                     .empty(''),
                                 headers: Joi.object(),
                             })
@@ -132,7 +132,7 @@ const getServer = async () => {
                         hapi: Joi.object()
                             .keys({
                                 filename: Joi.string()
-                                    .regex(/^\.[gif|jpe?g|png]$/)
+                                    .regex(/\.(gif|jpe?g|png)$/)
                                     .empty(''),
                                 headers: Joi.object(),
                             })
