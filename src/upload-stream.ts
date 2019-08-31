@@ -90,17 +90,22 @@ const getServer = async () => {
                 Object.values(payload)
                     .filter(({ hapi: { filename } }) => !!filename)
                     .map(payload =>
-                        Wreck.request(
-                            'POST',
-                            `http://localhost:3001/files/${encodeURIComponent(
-                                payload.hapi.filename
-                            )}`,
-                            { payload }
-                        )
+                        Promise.all([
+                            payload.hapi.filename,
+                            Wreck.request(
+                                'POST',
+                                `http://localhost:3001/files/${encodeURIComponent(
+                                    payload.hapi.filename
+                                )}`,
+                                { payload }
+                            ),
+                        ])
                     )
             );
 
-            return { uploaded: true };
+            return h
+                .response({ uploaded: responses.map(([filename]) => filename) })
+                .code(201);
         },
         method: 'POST',
         options: {

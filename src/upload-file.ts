@@ -83,7 +83,9 @@ const getServer = async () => {
                     )
                 );
 
-            return { uploaded: responses.map(([filename]) => filename) };
+            return h
+                .response({ uploaded: responses.map(([filename]) => filename) })
+                .code(201);
         },
         method: 'POST',
         options: {
