@@ -107,13 +107,9 @@ export const getServer = async () => {
              *
              * {@link https://hapi.dev/api/?v=18.3.2#route.options.payload.output}
              */
-            for (const { filename } of Object.values(payload)) {
-                cleanupQueue[request.info.id] = [];
-
-                if (filename) {
-                    cleanupQueue[request.info.id].push(filename);
-                }
-            }
+            cleanupQueue[request.info.id] = Object.values(payload).map(
+                ({ path }) => path
+            );
 
             const responses = await Promise.all(
                 Object.values(payload)
