@@ -1,11 +1,13 @@
-import { assert } from 'chai';
-import { Server } from '@hapi/hapi';
-import FormData from 'form-data';
 import Fs from 'fs';
 import Http from 'http';
 import Path from 'path';
+
+import { assert } from 'chai';
+import { Server } from '@hapi/hapi';
+import FormData from 'form-data';
 import Sinon from 'sinon';
 import StreamToPromise from 'stream-to-promise';
+import Subtext from '@hapi/subtext';
 import Wreck from '@hapi/wreck';
 
 import { getServer as getServerAnnotated } from '../src/upload-annotated';
@@ -18,23 +20,34 @@ const servers: [string, () => Promise<Server>][] = [
     ['Upload stream', getServerStream],
 ];
 
-let stub:
+let wreckStub:
     | Sinon.SinonStub<
           Parameters<typeof Wreck.request>,
           ReturnType<typeof Wreck.request>
       >
     | undefined;
+let subtextSpy:
+    | Sinon.SinonSpy<
+          Parameters<typeof Subtext.parse>,
+          ReturnType<typeof Subtext.parse>
+      >
+    | undefined;
 
 before(() => {
-    stub = Sinon.stub(Wreck, 'request').resolves({} as Http.IncomingMessage);
+    subtextSpy = Sinon.spy(Subtext, 'parse');
+    wreckStub = Sinon.stub(Wreck, 'request').resolves(
+        {} as Http.IncomingMessage
+    );
 });
 
 beforeEach(() => {
-    stub!.resetHistory();
+    subtextSpy!.resetHistory();
+    wreckStub!.resetHistory();
 });
 
 after(() => {
-    stub!.reset();
+    subtextSpy!.restore();
+    wreckStub!.reset();
 });
 
 servers.forEach(([name, getServer]) => {
@@ -186,9 +199,9 @@ servers.forEach(([name, getServer]) => {
                         uploaded: ['background.jpeg', 'profile.png'],
                     });
 
-                    assert.equal(stub!.callCount, 2);
+                    assert.equal(wreckStub!.callCount, 2);
 
-                    const calls = stub!.getCalls();
+                    const calls = wreckStub!.getCalls();
 
                     assert.isOk(
                         calls.some(({ args: [, url] }) =>
@@ -200,6 +213,37 @@ servers.forEach(([name, getServer]) => {
                             url.includes('profile.png')
                         )
                     );
+
+                    if (name === 'Upload file') {
+                        assert.equal(subtextSpy!.callCount, 1);
+
+                        const returnValue = await subtextSpy!.getCalls()[0]
+                            .returnValue;
+
+                        // Temporary filenames created by Subtext
+                        const filenames = Object.values(
+                            returnValue.payload
+                        ).map((f: any) => f.path);
+
+                        assert.equal(filenames.length, 2);
+
+                        const filesExist = await Promise.all(
+                            filenames.map((f: string) =>
+                                Fs.promises.stat(f).then(
+                                    () => true,
+                                    error => {
+                                        if (error.code !== 'ENOENT')
+                                            throw error;
+                                        return false;
+                                    }
+                                )
+                            )
+                        );
+
+                        assert.isOk(
+                            filesExist.every(exists => exists === false)
+                        );
+                    }
                 })
             );
         });
