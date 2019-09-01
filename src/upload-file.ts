@@ -13,16 +13,6 @@ interface MultipartFormDataHeaders {
     'content-type': string;
 }
 
-/**
- * Extend `request.app` for this app.
- * {@link https://github.com/Microsoft/TypeScript/issues/10859}
- */
-declare module '@hapi/hapi' {
-    export interface RequestApplicationState {
-        uploads: string[];
-    }
-}
-
 type FilePayload = Record<
     string,
     | {
