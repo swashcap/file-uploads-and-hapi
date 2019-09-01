@@ -39,6 +39,8 @@ type FilePayload = Record<
       }
 >;
 
+const cleanupQueue: Record<string, string[]> = {};
+
 export const getServer = async () => {
     const server = new Hapi.Server({
         port: process.env.PORT || 3000,
@@ -104,15 +106,22 @@ export const getServer = async () => {
              * > used (e.g. using the `request.app` object), and listening to the server
              * > `'response'` event to perform cleanup.
              *
-             * This should be completed outside of route handling to prevent blocking the response.
-             * This route pushes the temporary files onto the `request.app.uploads` queue, which is
-             * then handled by the `server.events.on('response')` handler.
+             * File clean should not be a route concern: it should be a system-related application
+             * concern. Considering the runtime, cleanup completed outside of route handling to
+             * prevent blocking the response. Hapi's `request.app` doesn't conform to API
+             * documentation, so files are pushed onto a queue for cleanup by the `'response'`
+             * event on the `server`.
+             *
+             * Ideally, a cron job (application on VM) or volume cleaning (application on
+             * containers) catches stale upload files.
              *
              * {@link https://hapi.dev/api/?v=18.3.2#route.options.payload.output}
              */
             for (const { filename } of Object.values(payload)) {
+                cleanupQueue[request.info.id] = [];
+
                 if (filename) {
-                    request.app.uploads.push(filename);
+                    cleanupQueue[request.info.id].push(filename);
                 }
             }
 
@@ -139,6 +148,9 @@ export const getServer = async () => {
         },
         method: 'POST',
         options: {
+            app: {
+                uploads: [],
+            },
             payload: {
                 allow: 'multipart/form-data',
                 output: 'file',
@@ -170,38 +182,39 @@ export const getServer = async () => {
     });
 
     /**
-     * Remove temporary files pushed onto the `request.app.uploads` queue by the upload route
-     * handler.
+     * Remove temporary files pushed onto the cleanup queue by the upload route handler.
      *
      * {@link https://hapi.dev/api/?v=18.3.2#server.events.response}
      */
-    server.events.on(
-        'response',
-        async ({ app: { uploads }, info: { id: requestId } }) => {
+    server.events.on('response', async ({ info: { id: requestId } }) => {
+        const files = cleanupQueue[requestId];
+
+        server.log('upload-cleanup', {
+            files,
+            requestId,
+            message: 'Starting cleanup',
+        });
+
+        try {
+            await Promise.all(cleanupQueue[requestId].map(Fs.promises.unlink));
+
             server.log('upload-cleanup', {
+                files,
+                message: 'Upload cleanup complete',
                 requestId,
-                message: 'Starting cleanup',
-                uploads,
             });
-
-            try {
-                await Promise.all(uploads.map(Fs.promises.unlink));
-
-                server.log('upload-cleanup', {
-                    message: 'Upload cleanup complete',
-                    requestId,
-                    uploads,
-                });
-            } catch (error) {
-                server.log(['error', 'upload-cleanup'], {
-                    error,
-                    message: 'Upload cleanup failed',
-                    requestId,
-                    uploads,
-                });
-            }
+        } catch (error) {
+            server.log(['error', 'upload-cleanup'], {
+                error,
+                files,
+                message: 'Upload cleanup failed',
+                requestId,
+            });
+        } finally {
+            /** @todo Implement FS or volume cleanup */
+            delete cleanupQueue[requestId];
         }
-    );
+    });
 
     return server;
 };
