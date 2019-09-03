@@ -1,3 +1,25 @@
+/**
+ * Upload file.
+ *
+ * This standalone module register a `/upload` route for handling form submissions with the
+ * `route.options.payload.output` setting of `file`, which parses the form submission and streams
+ * uploaded files to a temporary location on disk:
+ *
+ * > `'file'` - the incoming payload is written to temporary file in the directory specified by the
+ * > `uploads` settings. If the payload is 'multipart/form-data' and `parse` is `true`, field values
+ * > are presented as text while files are saved to disk.
+ *
+ * {@link https://hapi.dev/api/?v=18.3.2#route.options.payload.output}
+ *
+ * This example route passes assets to a theoretical downstream service, which listens for files
+ * files on `localhost:3001`, using the HTTP utility library Wreck.
+ *
+ * {@link https://github.com/hapijs/wreck}
+ *
+ * hapi doesn't clean up the temporary files; this is accomplished by the application through
+ * maintaining a list of temporary files, then deleting them after the server sends its response
+ * (see the `server.events.on('response')` handler below).
+ */
 import 'hard-rejection/register';
 
 import Fs from 'fs';
@@ -13,6 +35,12 @@ interface MultipartFormDataHeaders {
     'content-type': string;
 }
 
+/**
+ * The `request.payload` types for a file route handler.
+ *
+ * The `@types/hapi__hapi` package doesn't provide full types for request payloads. This type
+ * provides type safety for the upload route handler.
+ */
 type FilePayload = Record<
     string,
     | {
@@ -29,6 +57,10 @@ type FilePayload = Record<
       }
 >;
 
+/**
+ * A data structure for tracking uploaded assets that hapi places in a temporary file. See the
+ * route handler for use.
+ */
 const cleanupQueue: Record<string, string[]> = {};
 
 export const getServer = async () => {
@@ -43,6 +75,7 @@ export const getServer = async () => {
 
     await Promise.all([
         server.register(Inert),
+        // Don't log during tests
         process.env.NODE_ENV !== 'test'
             ? server.register({
                   plugin: Good,
@@ -68,6 +101,7 @@ export const getServer = async () => {
             : undefined,
     ]);
 
+    // Use Inert to serve static files from /public
     server.route({
         handler: {
             directory: {
@@ -80,10 +114,6 @@ export const getServer = async () => {
         path: '/{param*}',
     });
 
-    /**
-     * `file` output
-     * {@link https://hapi.dev/api/?v=18.3.1#route.options.payload.output}
-     */
     server.route({
         handler: async (request, h) => {
             const payload = request.payload as FilePayload;
@@ -134,14 +164,30 @@ export const getServer = async () => {
         },
         method: 'POST',
         options: {
-            app: {
-                uploads: [],
-            },
             payload: {
+                /**
+                 * Only allow form data submission on this route. hapi will return an error in all
+                 * other cases.
+                 */
                 allow: 'multipart/form-data',
+
+                /**
+                 * Configure the route to handle input in `file` mode, which streams user-uploaded
+                 * files to temporary files on disk and provides references to these temporary
+                 * files to the route handler.
+                 * {@link https://hapi.dev/api/?v=18.3.1#route.options.payload.output}
+                 */
                 output: 'file',
             },
             validate: {
+                /**
+                 * Payload validation isn't necessary, but this provides an easy way to ensure
+                 * the user uploads two files on the expected form fields (`background` and
+                 * `profile`) and the uploaded files have a specific extension (images in this case)
+                 * without handling it in the handler. hapi applies * the validation on the payload
+                 * before passing it to the handler, so the shape matches the type expected for
+                 * `request.payload`.
+                 */
                 payload: Joi.object({
                     background: Joi.object({
                         bytes: Joi.number().required(),
@@ -205,6 +251,13 @@ export const getServer = async () => {
     return server;
 };
 
+/**
+ * Start the server when this module is called directly:
+ *
+ * ```
+ * node src/upload-file.js
+ * ```
+ */
 if (require.main === module) {
     (async () => {
         const server = await getServer();

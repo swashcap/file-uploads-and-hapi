@@ -1,3 +1,22 @@
+/**
+ * Upload annotated.
+ *
+ * This standalone module register a `/upload` route for handling form submissions with the
+ * `route.options.payload.multipart` setting of `annotated`, which parses the form submission and
+ * buffers the uploaded files entirely into memory:
+ *
+ * > `annotated` - wraps each multipart part in an object with the following keys
+ * >   * `headers` - the part headers.
+ * >   * `filename` - the part file name.
+ * >   * `payload` - the processed part payload.
+ *
+ * {@link https://hapi.dev/api/?v=18.3.2#route.options.payload.multipart}
+ *
+ * This example route passes assets to a theoretical downstream service, which listens for files
+ * files on `localhost:3001`, using the HTTP utility library Wreck.
+ *
+ * {@link https://github.com/hapijs/wreck}
+ */
 import 'hard-rejection/register';
 
 import Good from '@hapi/good';
@@ -12,6 +31,12 @@ interface MultipartFormDataHeaders {
     'content-type': string;
 }
 
+/**
+ * The `request.payload` types for an annotated route handler.
+ *
+ * The `@types/hapi__hapi` package doesn't provide full types for request payloads. This type
+ * provides type safety for the upload route handler.
+ */
 type AnnotatedPayload = Record<
     string,
     | {
@@ -38,6 +63,7 @@ export const getServer = async () => {
 
     await Promise.all([
         server.register(Inert),
+        // Don't log during tests
         process.env.NODE_ENV !== 'test'
             ? server.register({
                   plugin: Good,
@@ -63,6 +89,7 @@ export const getServer = async () => {
             : undefined,
     ]);
 
+    // Use Inert to serve static files from /public
     server.route({
         handler: {
             directory: {
@@ -75,10 +102,6 @@ export const getServer = async () => {
         path: '/{param*}',
     });
 
-    /**
-     * `annotated` output
-     * {@link https://hapi.dev/api/?v=18.3.1#route.options.payload.multipart}
-     */
     server.route({
         handler: async (request, h) => {
             const payload = request.payload as AnnotatedPayload;
@@ -107,12 +130,32 @@ export const getServer = async () => {
         method: 'POST',
         options: {
             payload: {
+                /**
+                 * Only allow form data submission on this route. hapi will return an error in all
+                 * other cases.
+                 */
                 allow: 'multipart/form-data',
+
+                /**
+                 * Configure the route to handle input in `annotated` mode, which buffers the user-
+                 * uploaded files into memory and calls the route handler. This is similar to setting
+                 * `route.options.payload.output` to `data`, but hapi provides some additional
+                 * metadata in the request payload.
+                 * {@link https://hapi.dev/api/?v=18.3.1#route.options.payload.multipart}
+                 */
                 multipart: {
                     output: 'annotated',
                 },
             },
             validate: {
+                /**
+                 * Payload validation isn't necessary, but this provides an easy way to ensure
+                 * the user uploads two files on the expected form fields (`background` and
+                 * `profile`) and the uploaded files have a specific extension (images in this case)
+                 * without handling it in the handler. hapi applies * the validation on the payload
+                 * before passing it to the handler, so the shape matches the type expected for
+                 * `request.payload`.
+                 */
                 payload: Joi.object({
                     background: Joi.object({
                         filename: Joi.string()
@@ -141,6 +184,13 @@ export const getServer = async () => {
     return server;
 };
 
+/**
+ * Start the server when this module is called directly:
+ *
+ * ```
+ * node src/upload-annotated.js
+ * ```
+ */
 if (require.main === module) {
     (async () => {
         const server = await getServer();
