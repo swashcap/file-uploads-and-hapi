@@ -6,10 +6,6 @@ declare module '@hapi/pez' {
         maxBytes?: number;
     }
 
-    export interface DispenserPart extends stream.Readable {
-        name: string;
-    }
-
     export class Dispenser extends stream.Writable {
         constructor(options: DispenserOptions);
     }
