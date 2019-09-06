@@ -2,8 +2,8 @@
  * Upload stream.
  *
  * This standalone module register a `/upload` route for handling form submissions with the
- * `route.options.payload.output` setting of `stream`, which parses the form submission and
- * presents the route handler
+ * `route.options.payload.output` setting of `stream`, and a `route.options.parse` setting of
+ * `false`. hapi passes the request stream as the payload to the route handler:
  *
  * > `'stream'` - the incoming payload is made available via a `Stream.Readable` interface. If the
  * > payload is 'multipart/form-data' and `parse` is `true`, field values are presented as text
@@ -22,40 +22,30 @@
  */
 import 'hard-rejection/register';
 
+import Boom from '@hapi/boom';
+import Content, { ContentDisposition } from '@hapi/content';
 import Good from '@hapi/good';
 import Hapi from '@hapi/hapi';
 import Inert from '@hapi/inert';
 import Joi from '@hapi/joi';
 import Path from 'path';
+import Pez from '@hapi/pez';
 import Wreck from '@hapi/wreck';
 import { Readable } from 'stream';
 
-interface MultipartFormDataHeaders {
-    'content-disposition': string;
-    'content-type': string;
-}
-
-/**
- * The `request.payload` types for a stream route handler.
- *
- * The `@types/hapi__hapi` package doesn't provide full types for request payloads. This type
- * provides type safety for the upload route handler.
- */
-type StreamPayload = Record<
-    string,
-    Readable & {
-        hapi:
-            | {
-                  /** Signifies an empty form field */
-                  filename: '';
-                  headers: MultipartFormDataHeaders;
-              }
-            | {
-                  filename: string;
-                  headers: MultipartFormDataHeaders;
-              };
-    }
->;
+const partsSchema = Joi.array()
+    .items(
+        Joi.object({
+            filename: Joi.string()
+                .regex(/\.(gif|jpe?g|png)$/)
+                .required(),
+            name: Joi.any()
+                .valid('background', 'profile')
+                .required(),
+        }).unknown(true)
+    )
+    .min(2)
+    .max(2);
 
 export const getServer = async () => {
     const server = new Hapi.Server({
@@ -110,23 +100,64 @@ export const getServer = async () => {
 
     server.route({
         handler: async (request, h) => {
-            const payload = request.payload as StreamPayload;
+            const payload = request.payload as Readable;
+
+            /**
+             * Use Pez to parse the payload's multi-part files into streams:
+             * {@link https://github.com/hapijs/pez}
+             */
+            const streams = await new Promise<ContentDisposition[]>(
+                (resolve, reject) => {
+                    const dispenser = new Pez.Dispenser(
+                        Content.type(request.headers['content-type'])
+                    );
+                    const parts: ContentDisposition[] = [];
+
+                    const onClose = () => {
+                        dispenser.removeListener('error', onError);
+                        dispenser.removeListener('part', onPart);
+                        resolve(parts);
+                    };
+                    const onError = (error: any) => {
+                        dispenser.removeListener('close', onClose);
+                        dispenser.removeListener('part', onPart);
+                        reject(error);
+                    };
+                    const onPart = (part: ContentDisposition) => {
+                        parts.push(part);
+                    };
+
+                    dispenser.once('error', onError);
+                    dispenser.on('part', onPart);
+                    dispenser.once('close', onClose);
+
+                    payload.pipe(dispenser);
+                }
+            );
+
+            /**
+             * Hapi can't validate the payload when `parse` is `false`. Manually use Joi to ensure
+             * the form contains the expected files:
+             */
+            try {
+                Joi.assert(streams, partsSchema);
+            } catch (error) {
+                throw Boom.boomify(error, { statusCode: 400 });
+            }
 
             const responses = await Promise.all(
-                Object.values(payload)
-                    .filter(({ hapi: { filename } }) => !!filename)
-                    .map(payload =>
-                        Promise.all([
-                            payload.hapi.filename,
-                            Wreck.request(
-                                'POST',
-                                `http://localhost:3001/files/${encodeURIComponent(
-                                    payload.hapi.filename
-                                )}`,
-                                { payload }
-                            ),
-                        ])
-                    )
+                streams.map(payload =>
+                    Promise.all([
+                        payload.filename,
+                        Wreck.request(
+                            'POST',
+                            `http://localhost:3001/files/${encodeURIComponent(
+                                payload.filename
+                            )}`,
+                            { payload }
+                        ),
+                    ])
+                )
             );
 
             return h
@@ -148,46 +179,13 @@ export const getServer = async () => {
                  * {@link https://hapi.dev/api/?v=18.3.1#route.options.payload.output}
                  */
                 output: 'stream',
-            },
-            validate: {
+
                 /**
-                 * Payload validation isn't necessary, but this provides an easy way to ensure
-                 * the user uploads two files on the expected form fields (`background` and
-                 * `profile`) and the uploaded files have a specific extension (images in this case)
-                 * without handling it in the handler. hapi applies * the validation on the payload
-                 * before passing it to the handler, so the shape matches the type expected for
-                 * `request.payload`.
+                 * Parse the request manually in the handler to handle the uploaded files as
+                 * streams.
+                 * {@link https://hapi.dev/api/?v=18.3.2#route.options.payload.parse}
                  */
-                payload: Joi.object({
-                    background: Joi.object({
-                        hapi: Joi.object()
-                            .keys({
-                                filename: Joi.string()
-                                    .regex(/\.(gif|jpe?g|png)$/)
-                                    .empty(''),
-                                headers: Joi.object(),
-                            })
-                            .unknown(true)
-                            .required(),
-                    })
-                        .unknown(true)
-                        .required(),
-                    profile: Joi.object({
-                        hapi: Joi.object()
-                            .keys({
-                                filename: Joi.string()
-                                    .regex(/\.(gif|jpe?g|png)$/)
-                                    .empty(''),
-                                headers: Joi.object(),
-                            })
-                            .unknown(true)
-                            .required(),
-                    })
-                        .unknown(true)
-                        .required(),
-                })
-                    .unknown(true)
-                    .required(),
+                parse: false,
             },
         },
         path: '/upload',

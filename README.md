@@ -17,9 +17,9 @@ examines three, breaking them into standalone modules:
 * **File ([src/upload-file.ts](./src/upload-file.ts)):** hapi streams each
   uploaded file to the temporary directory, then calls the route handler with
   the temporary files' paths.
-* **Stream ([src/upload-stream.ts](./src/upload-stream.ts)):** hapi parses the
-  form request and transforms uploaded files into streams, then calls the route
-  handler with these streams.
+* **Stream ([src/upload-stream.ts](./src/upload-stream.ts)):** hapi passes the
+  raw request to the route handler, which transforms the multi-part files into
+  streams.
 
 Each file contains extensive commenting explaining how to approach each
 strategy.

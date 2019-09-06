@@ -29,7 +29,7 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hapi/boom@7.x.x":
+"@hapi/boom@7.x.x", "@hapi/boom@^7.4.3":
   version "7.4.3"
   resolved "https://registry.yarnpkg.com/@hapi/boom/-/boom-7.4.3.tgz#79ffed6ef8c625046a3bd069abed5a9d35fc50c1"
   integrity sha512-3di+R+BcGS7HKy67Zi6mIga8orf67GdR0ubDEVBG1oqz3y9B70LewsuCMCSvWWLKlI6V1+266zqhYzjMrPGvZw==
@@ -75,7 +75,7 @@
     "@hapi/joi" "15.x.x"
     "@hapi/podium" "3.x.x"
 
-"@hapi/content@4.x.x":
+"@hapi/content@4.x.x", "@hapi/content@^4.1.0":
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/@hapi/content/-/content-4.1.0.tgz#5265516949ca081e85a43e97c1058ff53fc69714"
   integrity sha512-hv2Czsl49hnWDEfRZOFow/BmYbKyfEknmk3k83gOp6moFn5ceHB4xVcna8OwsGfy8dxO81lhpPy+JgQEaU4SWw==
@@ -215,7 +215,7 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hapi/pez@4.x.x":
+"@hapi/pez@4.x.x", "@hapi/pez@^4.1.1":
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/@hapi/pez/-/pez-4.1.1.tgz#d515ed75bc082cb6da3ab8d7804a3b41a4d63be6"
   integrity sha512-TUa2C7Xk6J69HWrm+Ad+O6dFvdVAG0BiFUYaRsmkdWjFIfwHBCaOI1dWT/juNukSb39Lj6/mDVyjN+H4nKB3xg==
@@ -345,7 +345,7 @@
   dependencies:
     form-data "*"
 
-"@types/hapi__boom@*":
+"@types/hapi__boom@*", "@types/hapi__boom@^7.4.1":
   version "7.4.1"
   resolved "https://registry.yarnpkg.com/@types/hapi__boom/-/hapi__boom-7.4.1.tgz#06439d7637245dcbe6dd6548d2a91f2c1243d80b"
   integrity sha512-x/ZK824GomII7Yoei/nMoB46NQcSfGe0iVpZK3uUivxIAfUUSzRvu8RQO7ZkKapIgzgshHZc+GR+z/BQ8l2VLg==
@@ -1461,7 +1461,7 @@ type-detect@4.0.8, type-detect@^4.0.0, type-detect@^4.0.5:
   resolved "https://registry.yarnpkg.com/type-detect/-/type-detect-4.0.8.tgz#7646fb5f18871cfbb7749e69bd39a6388eb7450c"
   integrity sha512-0fr/mIH1dlO+x7TlcMy+bIDqKPsw/70tVyeHW787goQjhmqaZe10uwLujubK9q9Lg6Fiho1KUKDYz0Z7k7g5/g==
 
-typescript@^3.5.3:
+typescript@^3.6.2:
   version "3.6.2"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.6.2.tgz#105b0f1934119dde543ac8eb71af3a91009efe54"
   integrity sha512-lmQ4L+J6mnu3xweP8+rOrUwzmN+MRAj7TgtJtDaXE5PMyX2kCrklhg3rvOsOIfNeAWMQWO2F1GPc1kMD2vLAfw==
