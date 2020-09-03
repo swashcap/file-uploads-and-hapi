@@ -8,7 +8,7 @@
     "@hapi/good": "^8.2.1",
     "@hapi/good-console": "^8.1.1",
     "@hapi/good-squeeze": "^5.2.1",
-    "@hapi/hapi": "^18.3.2",
+    "@hapi/hapi": "^19.1.1",
     "@hapi/inert": "^5.2.1",
     "@hapi/joi": "^15.1.1",
     "@hapi/pez": "^4.1.1",
